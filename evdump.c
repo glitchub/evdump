@@ -22,7 +22,7 @@ const char *code(int t, int c)
     switch(t)
     {
         case EV_SYN: return ed_SYN(c)?:"unknown SYN event";
-        case EV_KEY: return ed_KEY(c)?:"unknown KEY event";
+        case EV_KEY: return ed_KEY(c)?:ed_BTN(c)?:"unknown KEY event";
         case EV_REL: return ed_REL(c)?:"unknown REL event";
         case EV_ABS: return ed_ABS(c)?:"unknown ABS event";
         case EV_MSC: return ed_MSC(c)?:"unknown MSC event";
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     char name[64];
     struct input_id id;
 
-    if (argc != 2) die("Usage: evdump /dev/input/eventX");
+    if (argc != 2) die("Usage: evdump /dev/input/eventX\n");
     f=open(argv[1], O_RDWR);
     if (f<0) die("Can't open %s: %s\n", argv[1], strerror(errno));
     
