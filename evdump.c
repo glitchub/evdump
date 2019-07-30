@@ -26,15 +26,22 @@
 #define usage() die("\
 Usage:\n\
 \n\
-    evdump device [... device]\n\
+    evdump [options] device [... device]\n\
 \n\
-Show events from up to 16 specified event devices.\n\
+Dump events from up to 16 specified event devices to stdout.\n\
+\n\
+Options are:\n\
+\n\
+    -t X    - only output type X events\n\
+    -c X    - only output code X events\n\
+    -v X    - only output value X events\n\
 \n\
 Device names can be specified as a full path, such as '/dev/input/event3', or\n\
 as 'event3', or just as '3'.\n\
 \n\
-Devices names containing the word 'mouse' or 'mice' are treated as three-octet\n\
-devices and generate virtual event streams.\n\
+Devices names containing the word 'mouse' or 'mice' are treated as generic\n\
+three-octet devices and generate virtual event streams, similar to what would\n\
+be reported by a real event device.\n\
 ")
 
 const char *code(int t, int c)
@@ -55,10 +62,19 @@ const char *code(int t, int c)
     return NULL;
 }
 
+// event filters
+int onlytype=-1, onlycode=-1, onlyvalue=-1;
+
 // report the given event
 void report(char *ename, struct timeval *etime, int etype, int ecode, int evalue)
 {
+    // filter out unwanted events
+    if (onlytype != -1 && etype != onlytype) return;
+    if (onlycode != -1 && ecode != onlycode) return;
+    if (onlyvalue != -1 && evalue != onlyvalue) return;
+
     printf("%s %ld.%06ld type=%d (%s) code=%d (%s) value=%d\n", ename, etime->tv_sec, etime->tv_usec, etype, ed_EV(etype)?:"unknown", ecode, code(etype,ecode)?:"unknown", evalue);
+    fflush(stdout);
 }
 
 int main(int argc, char*argv[])
@@ -67,6 +83,19 @@ int main(int argc, char*argv[])
     struct pollfd dev[MAXDEVS];
     char *name[MAXDEVS];
     bool ismouse[MAXDEVS]; // true if the device generates three-octet event codes
+
+    while (1) switch (getopt(argc,argv,":t:c:v:"))
+    {
+        case 't': onlytype=strtoul(optarg,NULL,0); break;
+        case 'c': onlycode=strtoul(optarg,NULL,0); break;
+        case 'v': onlyvalue=strtoul(optarg,NULL,0); break;
+
+        case ':':            // missing
+        case '?': usage();   // or invalid options
+        case -1: goto optx;  // no more options
+    } optx:
+    argc-=optind-1;
+    argv+=optind-1;
 
     if (argc < 2) usage();
 
@@ -91,12 +120,11 @@ int main(int argc, char*argv[])
                     if (version != EV_VERSION) die("%s unsupported event version %d\n", name[ndevs], version);
                     if (ioctl(dev[ndevs].fd,EVIOCGNAME(sizeof dn),dn) == -1) die("%s: EVIOCGNAME failed: %s\n", name[ndevs], strerror(errno));
                     if (ioctl(dev[ndevs].fd,EVIOCGID,&id) == -1) die("%s EVIOCGID failed: %s\n", name[ndevs], strerror(errno));
-                    printf("%s name='%s' bus=%d (%s) vendor=%d product=%d version=%d\n",
-                        name[ndevs], dn, id.bustype, ed_BUS(id.bustype)?:"unknown", id.vendor, id.product, id.version);
+                    warn("%s name='%s' bus=%d (%s) vendor=%d product=%d version=%d\n", name[ndevs], dn, id.bustype, ed_BUS(id.bustype)?:"unknown", id.vendor, id.product, id.version);
                 }
                 else
                 {
-                    printf("%s name='mouse'\n", name[ndevs]);
+                    warn("%s name='mouse'\n", name[ndevs]);
                 }
                 dev[ndevs].events=POLLIN;
                 dev[ndevs].revents=0;
