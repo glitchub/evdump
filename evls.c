@@ -67,16 +67,16 @@ int main(void)
                     {
                         printf("    Axis %d is %s\n", bit, ed_ABS(bit)?:"unknown");
                         struct input_absinfo i;
-                        if (ioctl(fd, EVIOCGABS(bit), i))
+                        if (ioctl(fd, EVIOCGABS(bit), &i))
                         {
                             printf("      EVIOCGABS failed: %s\n", strerror(errno));
                             continue;
                         }
                         printf("      Value     : %d\n", i.value);
-                        printf("      Minimum   : %d", i.minimum);
-                        printf("      Maximum   : %d", i.maximum);
-                        printf("      Fuzz      : %d", i.fuzz);
-                        printf("      Flat      : %d", i.flat);
+                        printf("      Minimum   : %d\n", i.minimum);
+                        printf("      Maximum   : %d\n", i.maximum);
+                        printf("      Fuzz      : %d\n", i.fuzz);
+                        printf("      Flat      : %d\n", i.flat);
                         printf("      Resolution: %d\n", i.resolution);
                     }
                 }

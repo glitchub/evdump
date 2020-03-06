@@ -1,6 +1,6 @@
-CFLAGS += -Wall -Werror -std=gnu99
+CFLAGS += -Wall -Werror -Wno-maybe-uninitialized -std=gnu99
 
-PROGS=evdump evls
+PROGS = evdump evls
 
 .PHONY: default
 default: ${PROGS}
