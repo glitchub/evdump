@@ -3,11 +3,11 @@ CFLAGS += -Wall -Werror -std=gnu99
 PROGS=evdump evls
 
 .PHONY: default
-default: $(PROGS)
+default: ${PROGS}
 
-%: %.c
+${PROGS}: %: %.c
 
-%.c: input.generated.h
+*.c: input.generated.h
 
 # Create a header file from interesting input.h definitions
 input.generated.h: input.generated
