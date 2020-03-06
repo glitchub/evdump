@@ -80,10 +80,10 @@ int main(void)
                         printf("    Repeat delay %d mS\n", repeat[0]);
                         printf("    Repeat period %d mS\n", repeat[1]);
                     }
-                    // Don't list all supported keys, there are hundreds, just show active
+                    // Don't list hundreds of supported keys, just show active
                     uint8_t status[(KEY_MAX+7)/8];
                     if (ioctl(fd, EVIOCGKEY(sizeof(status)), status) == sizeof status)
-                        for (int bit=0; bit < KEY_MAX; bit++)
+                        for (int bit = 0; bit < KEY_MAX; bit++)
                             if (set(status, bit))
                                 printf("    Active key %d is %s\n", bit, ed_KEY(bit)?:"unknown");
                     break;
@@ -92,7 +92,7 @@ int main(void)
                 {
                     uint8_t supported[(REL_MAX+7)/8];
                     if (ioctl(fd, EVIOCGBIT(EV_REL, sizeof supported), supported) == sizeof supported)
-                        for (int bit=0; bit < REL_MAX; bit++)
+                        for (int bit = 0; bit < REL_MAX; bit++)
                             if (set(supported, bit))
                                 printf("    Relative event %d is %s\n", bit, ed_REL(bit)?:"unknown");
                     break;
@@ -101,12 +101,12 @@ int main(void)
                 {
                     uint8_t supported[(ABS_MAX+7)/8];
                     if (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(supported)), supported) == sizeof supported)
-                        for (int bit=0; bit < ABS_MAX; bit++)
+                        for (int bit = 0; bit < ABS_MAX; bit++)
                             if (set(supported, bit))
                             {
                                 printf("    Axis %d is %s\n", bit, ed_ABS(bit)?:"unknown");
                                 struct input_absinfo i;
-                                if (ioctl(fd, EVIOCGABS(bit), &i))
+                                if (!ioctl(fd, EVIOCGABS(bit), &i))
                                 {
                                     printf("      Value     : %d\n", i.value);
                                     printf("      Minimum   : %d\n", i.minimum);
@@ -122,7 +122,7 @@ int main(void)
                 {
                     uint8_t supported[(MSC_MAX+7)/8];
                     if (ioctl(fd, EVIOCGBIT(EV_MSC, sizeof supported), supported) == sizeof supported)
-                        for (int bit=0; bit < MSC_MAX; bit++)
+                        for (int bit = 0; bit < MSC_MAX; bit++)
                             if (set(supported, bit))
                                 printf("    Misc event %d is %s\n", bit, ed_MSC(bit)?:"unknown");
                     break;
@@ -133,9 +133,8 @@ int main(void)
                     if (ioctl(fd, EVIOCGBIT(EV_SW, sizeof supported), supported) == sizeof supported)
                     {
                         uint8_t status[sizeof supported];
-                        bool valid=true;
-                        if (ioctl(fd, EVIOCGSW(sizeof(status)), status) != sizeof status) valid=false;
-                        for (int bit=0; bit < SW_MAX; bit++)
+                        bool valid = (ioctl(fd, EVIOCGSW(sizeof(status)), status) == sizeof status);
+                        for (int bit = 0; bit < SW_MAX; bit++)
                             if (set(supported, bit))
                             {
                                 if (valid && set(status, bit))
@@ -150,10 +149,9 @@ int main(void)
                     uint8_t supported[(LED_MAX+7)/8];
                     if (ioctl(fd, EVIOCGBIT(EV_LED, sizeof supported), supported) == sizeof supported)
                     {
-                        bool valid=true;
                         uint8_t status[sizeof supported];
-                        if (ioctl(fd, EVIOCGLED(sizeof(status)), status) != sizeof status) valid=false;
-                        for (int bit=0; bit < LED_MAX; bit++)
+                        bool valid = (ioctl(fd, EVIOCGLED(sizeof(status)), status) == sizeof status);
+                        for (int bit = 0; bit < LED_MAX; bit++)
                             if (set(supported, bit))
                             {
                                 if (valid && set(status, bit))
@@ -169,10 +167,9 @@ int main(void)
                     uint8_t supported[(SND_MAX+7)/8];
                     if (ioctl(fd, EVIOCGBIT(EV_SND, sizeof supported), supported) == sizeof supported)
                     {
-                        bool valid=true;
                         uint8_t status[sizeof supported];
-                        if (ioctl(fd, EVIOCGSND(sizeof(status)), status) != sizeof status) valid=false;
-                        for (int bit=0; bit < SND_MAX; bit++)
+                        bool valid = (ioctl(fd, EVIOCGSND(sizeof(status)), status) == sizeof status);
+                        for (int bit = 0; bit < SND_MAX; bit++)
                             if (set(supported, bit))
                             {
                                 if (valid && set(status, bit))
