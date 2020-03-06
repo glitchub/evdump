@@ -1,11 +1,16 @@
 CFLAGS += -Wall -Werror -std=gnu99
 
-evdump: evdump.c
+PROGS=evdump evls
 
-evdump.c: input.generated.h
+.PHONY: default
+default: $(PROGS)
+
+%: %.c
+
+%.c: input.generated.h
 
 # Create a header file from interesting input.h definitions
-input.generated.h: input.generated 
+input.generated.h: input.generated
 	@echo "// Generated file, do not check in!" > $@
 	@$(foreach t,EV SYN KEY BTN REL ABS SW MSC LED REP SND BUS FF_STATUS, { \
 		printf 'const char * ed_$(t)(int n)\n{\n  switch(n)\n  {\n'; \
@@ -25,9 +30,4 @@ input.generated:
 	$(CC) $(CFLAGS) -E -dM -include "linux/input.h" - < /dev/null >> $@
 
 .PHONY: clean
-clean:; rm -f evdump input.generated*
-
-ifneq ($(DESTINATION),)
-.PHONY: install
-install:; mkdir -p $(DESTINATION) && install -m 0755 evdump $(DESTINATION)
-endif
+clean:; rm -f $(PROGS) input.generated*
