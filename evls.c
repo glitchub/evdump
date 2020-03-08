@@ -17,7 +17,7 @@
 // true if bit b is set in byte array a
 #define set(a, b) (a[(b)/8] & (1 << ((b) & 7)))
 
-int main(void)
+int main(int argc, char *argv[])
 {
     for (int ev = 0; ev < 32; ev++)
     {
@@ -34,42 +34,42 @@ int main(void)
 
         char name[64];
         if (ioctl(fd, EVIOCGNAME(sizeof name), name) < 0) *name = 0;
-        printf("  Name \"%s\"\n", *name ? name : "Name unknown");
+        printf("    Name \"%s\"\n", *name ? name : "Name unknown");
 
         int version;
         if (ioctl(fd, EVIOCGVERSION, &version))
         {
-            printf("  EVIOCGVERSION failed\n");
+            printf("    EVIOCGVERSION failed\n");
             goto next;
         }
         else if (version != EV_VERSION)
         {
-            printf("  Unexpected stack version %d\n", version);
+            printf("    Unexpected stack version %d\n", version);
             goto next;
         }
 
         struct input_id id;
         if (ioctl(fd, EVIOCGID, &id))
         {
-            printf("  EVIOCGID failed\n");
+            printf("    EVIOCGID failed\n");
             goto next;
         }
-        printf("  Vendor %d\n", id.vendor);
-        printf("  Product %d\n", id.product);
-        printf("  Version %d\n", id.version);
-        printf("  Bus type %d is %s\n", id.bustype, ed_BUS(id.bustype)?:"unknown");
+        printf("    Vendor %d\n", id.vendor);
+        printf("    Product %d\n", id.product);
+        printf("    Version %d\n", id.version);
+        printf("    Bus type %d is %s\n", id.bustype, ed_BUS(id.bustype)?:"unknown");
 
         uint8_t capabilities[(EV_MAX+7)/8];
         if (ioctl(fd, EVIOCGBIT(0, sizeof capabilities), capabilities) != sizeof capabilities)
         {
-            printf("  EVIOCGBIT(0) failed\n");
+            printf("    EVIOCGBIT(0) failed\n");
             goto next;
         }
 
         for (int bit = 1; bit < EV_MAX; bit++) // note, skip bit 0 = EV_SYN
         if (set(capabilities, bit))
         {
-            printf("  Capability %d is %s\n", bit, ed_EV(bit)?:"unknown");
+            printf("    Capability %d is %s\n", bit, ed_EV(bit)?:"unknown");
             switch(bit)
             {
                 case EV_KEY:
@@ -77,15 +77,23 @@ int main(void)
                     uint32_t repeat[2];
                     if (!ioctl(fd, EVIOCGREP, &repeat))
                     {
-                        printf("    Repeat delay %d mS\n", repeat[0]);
-                        printf("    Repeat period %d mS\n", repeat[1]);
+                        printf("        Repeat delay %d mS\n", repeat[0]);
+                        printf("        Repeat period %d mS\n", repeat[1]);
                     }
-                    // Don't list hundreds of supported keys, just show active
-                    uint8_t status[(KEY_MAX+7)/8];
-                    if (ioctl(fd, EVIOCGKEY(sizeof(status)), status) == sizeof status)
+                    uint8_t supported[(KEY_MAX+7)/8];
+                    if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(supported)), supported) == sizeof supported)
+                    {
+                        int8_t status[(KEY_MAX+7)/8];
+                        bool valid = (ioctl(fd, EVIOCGKEY(sizeof(status)), status) == sizeof status);
                         for (int bit = 0; bit < KEY_MAX; bit++)
-                            if (set(status, bit))
-                                printf("    Active key %d is %s\n", bit, ed_KEY(bit)?:"unknown");
+                            if (set(supported, bit))
+                            {
+                                if (valid && set(status, bit))
+                                    printf("        Active key %d is %s\n", bit, ed_KEY(bit)?:ed_BTN(bit)?:"unknown");
+                                else
+                                    printf("        Key %d is %s\n", bit, ed_KEY(bit)?:ed_BTN(bit)?:"unknown");
+                            }
+                    }
                     break;
                 }
                 case EV_REL:
@@ -94,7 +102,7 @@ int main(void)
                     if (ioctl(fd, EVIOCGBIT(EV_REL, sizeof supported), supported) == sizeof supported)
                         for (int bit = 0; bit < REL_MAX; bit++)
                             if (set(supported, bit))
-                                printf("    Relative event %d is %s\n", bit, ed_REL(bit)?:"unknown");
+                                printf("        Relative event %d is %s\n", bit, ed_REL(bit)?:"unknown");
                     break;
                 }
                 case EV_ABS:
@@ -104,16 +112,16 @@ int main(void)
                         for (int bit = 0; bit < ABS_MAX; bit++)
                             if (set(supported, bit))
                             {
-                                printf("    Axis %d is %s\n", bit, ed_ABS(bit)?:"unknown");
+                                printf("        Axis %d is %s\n", bit, ed_ABS(bit)?:"unknown");
                                 struct input_absinfo i;
                                 if (!ioctl(fd, EVIOCGABS(bit), &i))
                                 {
-                                    printf("      Value     : %d\n", i.value);
-                                    printf("      Minimum   : %d\n", i.minimum);
-                                    printf("      Maximum   : %d\n", i.maximum);
-                                    printf("      Fuzz      : %d\n", i.fuzz);
-                                    printf("      Flat      : %d\n", i.flat);
-                                    printf("      Resolution: %d\n", i.resolution);
+                                    printf("            Value     : %d\n", i.value);
+                                    printf("            Minimum   : %d\n", i.minimum);
+                                    printf("            Maximum   : %d\n", i.maximum);
+                                    printf("            Fuzz      : %d\n", i.fuzz);
+                                    printf("            Flat      : %d\n", i.flat);
+                                    printf("            Resolution: %d\n", i.resolution);
                                 }
                             }
                     break;
@@ -124,7 +132,7 @@ int main(void)
                     if (ioctl(fd, EVIOCGBIT(EV_MSC, sizeof supported), supported) == sizeof supported)
                         for (int bit = 0; bit < MSC_MAX; bit++)
                             if (set(supported, bit))
-                                printf("    Misc event %d is %s\n", bit, ed_MSC(bit)?:"unknown");
+                                printf("        Misc event %d is %s\n", bit, ed_MSC(bit)?:"unknown");
                     break;
                 }
                 case EV_SW:
@@ -138,9 +146,9 @@ int main(void)
                             if (set(supported, bit))
                             {
                                 if (valid && set(status, bit))
-                                    printf("    Active switch %d is %s\n", bit, ed_SW(bit)?:"unknown");
+                                    printf("        Active switch %d is %s\n", bit, ed_SW(bit)?:"unknown");
                                 else
-                                    printf("    Switch %d is %s\n", bit, ed_SW(bit)?:"unknown");
+                                    printf("        Switch %d is %s\n", bit, ed_SW(bit)?:"unknown");
                             }
                     }
                 }
@@ -155,9 +163,9 @@ int main(void)
                             if (set(supported, bit))
                             {
                                 if (valid && set(status, bit))
-                                    printf("    Active LED %d is %s\n", bit, ed_LED(bit)?:"unknown");
+                                    printf("        Active LED %d is %s\n", bit, ed_LED(bit)?:"unknown");
                                 else
-                                    printf("    LED %d is %s\n", bit, ed_LED(bit)?:"unknown");
+                                    printf("        LED %d is %s\n", bit, ed_LED(bit)?:"unknown");
                             }
                     }
                     break;
@@ -173,9 +181,9 @@ int main(void)
                             if (set(supported, bit))
                             {
                                 if (valid && set(status, bit))
-                                    printf("    Active sound %d is %s\n", bit, ed_SND(bit)?:"unknown");
+                                    printf("        Active sound %d is %s\n", bit, ed_SND(bit)?:"unknown");
                                 else
-                                    printf("    Sound %d is %s\n", bit, ed_SND(bit)?:"unknown");
+                                    printf("        Sound %d is %s\n", bit, ed_SND(bit)?:"unknown");
                             }
                     }
                     break;
